@@ -1,0 +1,16 @@
+[package]
+name = "expe-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "EXPE interactive terminal interface."
+
+[dependencies]
+expe-core = { workspace = true }
+expe-engine = { workspace = true }
+ratatui = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

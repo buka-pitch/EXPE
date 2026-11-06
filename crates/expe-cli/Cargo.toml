@@ -1,0 +1,31 @@
+[package]
+name = "expe-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "EXPE command line interface."
+
+[[bin]]
+name = "expe"
+path = "src/main.rs"
+
+[dependencies]
+expe-core = { workspace = true }
+expe-engine = { workspace = true }
+expe-tui = { workspace = true }
+clap = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+rayon = { workspace = true }
+regex = { workspace = true }
+time = { workspace = true }
+
+[dev-dependencies]
+expe-testkit = { workspace = true }
+tempfile = { workspace = true }
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,15 @@
+[package]
+name = "expe-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Pure domain model for EXPE: artifacts, findings, IOCs, scoring and reports."
+
+[dependencies]
+serde = { workspace = true }
+schemars = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
