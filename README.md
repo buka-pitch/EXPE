@@ -29,7 +29,23 @@
 - Text, JSON, Markdown, and JSONL output; JSON Schema export.
 - Interactive TUI with six data views, live filtering, OSC52 copy, JSON export, and hex navigation.
 
+## Screenshots
+
+| Open a sample | Analysis in progress |
+|---|---|
+| ![Open screen with a typed sample path](img/open-sample.png) | ![Analysis progress with the current pipeline stage](img/analyzing.png) |
+
+| Overview | Structure |
+|---|---|
+| ![Overview with risk, findings, indicators, and section entropy](img/overview.png) | ![Structure view with sections, metadata, and imports](img/structure.png) |
+
+| Indicators | Hex |
+|---|---|
+| ![Indicators with search filter and detail pane](img/indicators.png) | ![Hex view with offsets, raw bytes, and ASCII](img/hex.png) |
+
 ## Install
+
+Prebuilt Linux x86-64 binaries are available on the [Releases](https://github.com/buka-pitch/EXPE/releases) page.
 
 Build from source with Rust **1.88 or newer**:
 
