@@ -27,7 +27,7 @@ fn sanitize_with(input: &str, multiline: bool) -> String {
     while let Some(ch) = chars.next() {
         match ch {
             '\n' if multiline => out.push('\n'),
-            '\n' | '\r' | '\t' => out.push(' '),
+            '\n' | '\r' | '\t' | '\u{7}' | '\u{8}' | '\u{b}' | '\u{c}' => out.push(' '),
             '\u{1b}' => {
                 // Drop the whole CSI/OSC sequence instead of leaving it visible.
                 if chars.peek() == Some(&'[') {
@@ -46,7 +46,6 @@ fn sanitize_with(input: &str, multiline: bool) -> String {
                     }
                 }
             }
-            '\u{7}' | '\u{8}' | '\u{b}' | '\u{c}' => out.push(' '),
             ch if ch.is_control() => out.push(REPLACEMENT),
             ch if is_bidi_control(ch) => out.push(REPLACEMENT),
             ch => out.push(ch),

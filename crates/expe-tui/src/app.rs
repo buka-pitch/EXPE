@@ -157,6 +157,8 @@ impl SeverityCounts {
 const TOAST_TTL: u16 = 34;
 const OPEN_PATH_LIMIT: usize = 4096;
 
+// The console keeps independent view, overlay and process flags together.
+#[allow(clippy::struct_excessive_bools)]
 pub struct App {
     pub screen: Screen,
     pub status: Status,
@@ -436,11 +438,11 @@ impl App {
             }
             KeyCode::Char('u' | 'U') if ctrl => self.goto_buf.clear(),
             KeyCode::Char(ch)
-                if !ctrl && (ch.is_ascii_hexdigit() || ch == 'x' || ch == 'X' || ch == '_') =>
+                if !ctrl
+                    && (ch.is_ascii_hexdigit() || ch == 'x' || ch == 'X' || ch == '_')
+                    && self.goto_buf.len() < 18 =>
             {
-                if self.goto_buf.len() < 18 {
-                    self.goto_buf.push(ch);
-                }
+                self.goto_buf.push(ch);
             }
             _ => {}
         }
@@ -572,7 +574,7 @@ impl App {
         }
         let current = self.screen.nav_index().unwrap_or(0);
         let len = Screen::NAV.len();
-        let next = (current as isize + delta).rem_euclid(len as isize) as usize;
+        let next = (current.cast_signed() + delta).rem_euclid(len.cast_signed()) as usize;
         self.set_screen(Screen::NAV[next]);
     }
 
@@ -677,11 +679,12 @@ impl App {
 
     fn current_scroll_mut(&mut self) -> &mut usize {
         match self.screen {
-            Screen::Structure => &mut self.structure_scroll,
             Screen::Strings => &mut self.strings_scroll,
             Screen::Iocs => &mut self.iocs_scroll,
             Screen::Findings => &mut self.findings_scroll,
-            _ => &mut self.structure_scroll,
+            Screen::Open | Screen::Overview | Screen::Structure | Screen::Hex => {
+                &mut self.structure_scroll
+            }
         }
     }
 
@@ -907,6 +910,8 @@ impl App {
     }
 
     #[must_use]
+    // Stage positions are small fixed integers (1..=6), so f64 is exact here.
+    #[allow(clippy::cast_precision_loss)]
     pub fn progress(&self) -> f64 {
         if self.status == Status::Ready {
             return 1.0;
@@ -916,12 +921,13 @@ impl App {
 
     #[must_use]
     pub fn spinner(&self) -> &'static str {
+        let tick = usize::try_from(self.tick).unwrap_or(usize::MAX);
         if self.ascii {
             const FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
-            FRAMES[(self.tick as usize / 2) % FRAMES.len()]
+            FRAMES[(tick / 2) % FRAMES.len()]
         } else {
             const FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-            FRAMES[(self.tick as usize / 2) % FRAMES.len()]
+            FRAMES[(tick / 2) % FRAMES.len()]
         }
     }
 

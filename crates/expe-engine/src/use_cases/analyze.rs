@@ -15,19 +15,10 @@ use crate::parse::{archive_kind, detect, parse_structure};
 use crate::rules::RuleSet;
 use crate::strings;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AnalyzeOptions {
     pub limits: Limits,
     pub include_strings: bool,
-}
-
-impl Default for AnalyzeOptions {
-    fn default() -> Self {
-        Self {
-            limits: Limits::default(),
-            include_strings: false,
-        }
-    }
 }
 
 pub struct Analyzer {

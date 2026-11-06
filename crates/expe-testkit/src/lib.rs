@@ -121,7 +121,11 @@ impl PeBuilder {
         let mut layout = Vec::new();
         let mut virtual_address = SECTION_ALIGNMENT;
         for section in &sections {
-            let raw_size = align_up(section.data.len() as u32, FILE_ALIGNMENT).max(FILE_ALIGNMENT);
+            let raw_size = align_up(
+                u32::try_from(section.data.len()).unwrap_or(u32::MAX),
+                FILE_ALIGNMENT,
+            )
+            .max(FILE_ALIGNMENT);
             layout.push((virtual_address, raw_offset, raw_size));
             virtual_address = virtual_address.saturating_add(SECTION_ALIGNMENT);
             raw_offset = raw_offset.saturating_add(raw_size);
@@ -135,10 +139,18 @@ impl PeBuilder {
         image[0x40..0x44].copy_from_slice(b"PE\0\0");
 
         let coff = 0x44;
-        write_u16(&mut image, coff, if self.dll { 0x8664 } else { 0x8664 });
-        write_u16(&mut image, coff + 2, sections.len() as u16);
+        write_u16(&mut image, coff, 0x8664);
+        write_u16(
+            &mut image,
+            coff + 2,
+            u16::try_from(sections.len()).unwrap_or(u16::MAX),
+        );
         write_u32(&mut image, coff + 4, self.timestamp);
-        write_u16(&mut image, coff + 16, OPTIONAL_HEADER_SIZE as u16);
+        write_u16(
+            &mut image,
+            coff + 16,
+            u16::try_from(OPTIONAL_HEADER_SIZE).unwrap_or(u16::MAX),
+        );
         write_u16(
             &mut image,
             coff + 18,
@@ -165,9 +177,9 @@ impl PeBuilder {
         write_u32(&mut image, opt + 56, size_of_image);
         write_u32(&mut image, opt + 60, size_of_headers);
         write_u16(&mut image, opt + 68, self.subsystem);
-        write_u64(&mut image, opt + 72, 0x100000);
+        write_u64(&mut image, opt + 72, 0x0010_0000);
         write_u64(&mut image, opt + 80, 0x1000);
-        write_u64(&mut image, opt + 88, 0x100000);
+        write_u64(&mut image, opt + 88, 0x0010_0000);
         write_u64(&mut image, opt + 96, 0x1000);
         write_u32(&mut image, opt + 108, 16);
 
@@ -211,7 +223,7 @@ pub fn packed_pe() -> Vec<u8> {
     let data: Vec<u8> = (0..4096_u32)
         .map(|value| {
             let mixed = value.wrapping_mul(2_654_435_761).rotate_left(7);
-            (mixed ^ (mixed >> 13)) as u8
+            u8::try_from((mixed ^ (mixed >> 13)) & 0xFF).unwrap_or_default()
         })
         .collect();
     PeBuilder::new()
@@ -258,7 +270,7 @@ fn align_up(value: u32, alignment: u32) -> u32 {
     if alignment == 0 {
         value
     } else {
-        value.saturating_add(alignment - 1) / alignment * alignment
+        value.div_ceil(alignment).saturating_mul(alignment)
     }
 }
 

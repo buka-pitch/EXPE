@@ -183,6 +183,12 @@ impl Theme {
         }
     }
 
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss
+    )]
+    // `value` is clamped to 0..=1 and `width` is a terminal column count.
     pub fn meter(&self, value: f64, width: usize) -> String {
         let clamped = value.clamp(0.0, 1.0);
         let filled = (clamped * width as f64).round() as usize;

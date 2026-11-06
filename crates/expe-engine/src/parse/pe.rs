@@ -28,7 +28,10 @@ pub fn parse(bytes: &[u8], limits: &Limits) -> Result<Structure> {
     let debug_pdb = extract_pdb(&pe);
     let overlay = build_overlay(bytes, &pe, &sections);
     let imphash = compute_imphash(&pe);
-    let resource_count = pe.resource_data.as_ref().map_or(0, |data| data.count());
+    let resource_count = pe
+        .resource_data
+        .as_ref()
+        .map_or(0, goblin::pe::resource::ResourceData::count);
     let version_info = extract_version_info(&pe);
 
     let subsystem = pe.header.optional_header.map_or_else(
@@ -123,12 +126,8 @@ fn build_sections(
 fn build_imports(pe: &PE<'_>, limits: &Limits) -> Vec<ImportLibrary> {
     let mut libraries: Vec<ImportLibrary> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();
-    let mut retained = 0_usize;
 
-    for import in &pe.imports {
-        if retained >= limits.max_imports {
-            break;
-        }
+    for import in pe.imports.iter().take(limits.max_imports) {
         let dll = import.dll.to_string();
         let position = *index.entry(dll.clone()).or_insert_with(|| {
             libraries.push(ImportLibrary {
@@ -145,9 +144,8 @@ fn build_imports(pe: &PE<'_>, limits: &Limits) -> Vec<ImportLibrary> {
         libraries[position].functions.push(ImportedFunction {
             name,
             ordinal,
-            offset: import.offset as u64,
+            offset: u64::try_from(import.offset).unwrap_or(u64::MAX),
         });
-        retained += 1;
     }
     libraries
 }
@@ -156,17 +154,22 @@ fn build_exports(pe: &PE<'_>, limits: &Limits) -> Vec<ExportSymbol> {
     pe.exports
         .iter()
         .take(limits.max_imports)
-        .filter_map(|export| {
-            let name = export.name.map(str::to_string).unwrap_or_else(|| {
-                export
-                    .offset
-                    .map_or_else(|| format!("rva_{:#x}", export.rva), |o| format!("{o:#x}"))
-            });
-            Some(ExportSymbol {
+        .map(|export| {
+            let name = export.name.map_or_else(
+                || {
+                    export
+                        .offset
+                        .map_or_else(|| format!("rva_{:#x}", export.rva), |o| format!("{o:#x}"))
+                },
+                str::to_string,
+            );
+            ExportSymbol {
                 name,
-                rva: export.rva as u64,
-                offset: export.offset.map(|offset| offset as u64),
-            })
+                rva: u64::try_from(export.rva).unwrap_or(u64::MAX),
+                offset: export
+                    .offset
+                    .map(|offset| u64::try_from(offset).unwrap_or(u64::MAX)),
+            }
         })
         .collect()
 }
@@ -278,10 +281,8 @@ fn extract_version_info(pe: &PE<'_>) -> BTreeMap<String, String> {
         ("legal_copyright", strings.legal_copyright()),
     ];
     for (key, value) in fields {
-        if let Some(value) = value {
-            if !value.is_empty() {
-                map.insert(key.to_string(), value);
-            }
+        if let Some(value) = value.filter(|value| !value.is_empty()) {
+            map.insert(key.to_string(), value);
         }
     }
     map

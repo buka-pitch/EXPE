@@ -35,9 +35,11 @@ impl ExpeError {
     pub fn exit_code(&self) -> i32 {
         match self {
             Self::Config(_) | Self::Rule(_) => 4,
-            Self::Io { .. } | Self::Parse { .. } | Self::UnsupportedFormat(_) => 2,
-            Self::LimitExceeded(_) => 2,
-            Self::Output(_) => 2,
+            Self::Io { .. }
+            | Self::Parse { .. }
+            | Self::UnsupportedFormat(_)
+            | Self::LimitExceeded(_)
+            | Self::Output(_) => 2,
         }
     }
 }

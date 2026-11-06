@@ -7,6 +7,9 @@ use ratatui::widgets::{Block, Paragraph};
 use super::{Theme, clip_ascii, format_size, status_style, verdict_chip};
 use crate::app::{App, Status};
 
+// Both report states build the same (left, right) pair; the match keeps that
+// symmetry explicit.
+#[allow(clippy::single_match_else)]
 pub fn draw(frame: &mut Frame<'_>, area: Rect, app: &App, theme: &Theme) {
     let block = Block::bordered()
         .border_type(theme.border_type())

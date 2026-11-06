@@ -8,8 +8,11 @@ pub fn sanitize(value: &str) -> String {
     for ch in value.chars() {
         match ch {
             '\n' | '\r' | '\t' => out.push(' '),
-            '\u{1b}' | '\u{9b}' | '\u{9d}' | '\u{90}' => out.push('?'),
-            '\u{202a}'..='\u{202e}'
+            '\u{1b}'
+            | '\u{9b}'
+            | '\u{9d}'
+            | '\u{90}'
+            | '\u{202a}'..='\u{202e}'
             | '\u{2066}'..='\u{2069}'
             | '\u{200b}'..='\u{200f}'
             | '\u{2028}'

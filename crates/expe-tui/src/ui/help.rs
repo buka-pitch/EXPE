@@ -7,8 +7,8 @@ use ratatui::widgets::{Clear, Paragraph};
 use super::{Theme, centered_rect};
 
 pub fn draw(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let width = area.width.min(78).max(50) as u16;
-    let height = area.height.min(28).max(18) as u16;
+    let width = area.width.clamp(50, 78);
+    let height = area.height.clamp(18, 28);
     let popup = centered_rect(area, width, height);
 
     // Erase whatever was underneath, then paint an opaque card. Without this

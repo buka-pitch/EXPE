@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Deterministic synthetic PE/ELF fixtures for EXPE tests."
+description = "Deterministic synthetic PE fixtures for EXPE tests."
 
 [dependencies]
 expe-core = { workspace = true }

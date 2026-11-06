@@ -1,5 +1,8 @@
 /// Shannon entropy in bits per byte, range 0..=8.
 #[must_use]
+// Byte and count totals are bounded by the address space; f64 is intentionally
+// used only for the probability ratio.
+#[allow(clippy::cast_precision_loss)]
 pub fn entropy(data: &[u8]) -> f64 {
     if data.is_empty() {
         return 0.0;

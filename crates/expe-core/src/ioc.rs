@@ -47,7 +47,7 @@ impl IocKind {
         }
     }
 
-    /// Stable snake_case identifier used by rule files and CLI filters.
+    /// Stable `snake_case` identifier used by rule files and CLI filters.
     #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
@@ -70,7 +70,7 @@ impl IocKind {
         }
     }
 
-    /// Parse the snake_case identifier used by rule files and CLI filters.
+    /// Parse the `snake_case` identifier used by rule files and CLI filters.
     #[must_use]
     pub fn parse(value: &str) -> Option<Self> {
         Some(match value {

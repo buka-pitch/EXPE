@@ -340,8 +340,10 @@ mod tests {
     fn respects_ioc_cap() {
         let rules = RuleSet::load_default().unwrap();
         let extractor = IocExtractor::new(&rules);
-        let mut limits = Limits::default();
-        limits.max_iocs = 1;
+        let limits = Limits {
+            max_iocs: 1,
+            ..Limits::default()
+        };
         let strings = vec![string("1.2.3.4", 0), string("5.6.7.8", 10)];
         let result = extractor.extract(&strings, &Structure::Unavailable, &limits);
         assert_eq!(

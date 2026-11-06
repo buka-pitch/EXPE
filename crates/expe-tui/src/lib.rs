@@ -11,7 +11,7 @@ mod ui;
 pub mod worker;
 
 use std::io;
-use std::io::IsTerminal;
+use std::io::{IsTerminal, Write as _};
 use std::panic;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -27,7 +27,7 @@ use crate::app::{App, Effect, Msg};
 
 /// Run the interactive console. If `path` is provided, analysis begins
 /// immediately; otherwise the open screen is shown.
-pub fn run(path: Option<PathBuf>, analyzer: Analyzer, options: AnalyzeOptions) -> Result<()> {
+pub fn run(path: Option<PathBuf>, analyzer: Analyzer, options: &AnalyzeOptions) -> Result<()> {
     if !io::stdout().is_terminal() {
         return Err(expe_core::ExpeError::Config(
             "stdout is not a TTY; use `expe analyze --format text` instead".to_string(),
@@ -57,7 +57,7 @@ pub fn run(path: Option<PathBuf>, analyzer: Analyzer, options: AnalyzeOptions) -
 
     if let Some(initial) = path {
         for effect in app.request_analysis(initial) {
-            handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, &options);
+            handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, options);
         }
     }
 
@@ -76,14 +76,14 @@ pub fn run(path: Option<PathBuf>, analyzer: Analyzer, options: AnalyzeOptions) -
         }
         for msg in worker_msgs {
             for effect in app.update(Msg::Worker(msg)) {
-                handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, &options);
+                handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, options);
             }
         }
 
         // Regular tick at ~12 Hz.
         if last_tick.elapsed() >= Duration::from_millis(80) {
             for effect in app.update(Msg::Tick) {
-                handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, &options);
+                handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, options);
             }
             last_tick = std::time::Instant::now();
         }
@@ -94,13 +94,12 @@ pub fn run(path: Option<PathBuf>, analyzer: Analyzer, options: AnalyzeOptions) -
             match event::read().map_err(|error| expe_core::ExpeError::Output(error.to_string()))? {
                 Event::Key(key) if key.kind == KeyEventKind::Press => {
                     for effect in app.update(Msg::Key(key)) {
-                        handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, &options);
+                        handle_effect(&effect, &mut app, &mut worker_rx, &analyzer, options);
                     }
                 }
-                Event::Resize(_, _) => {
-                    // Frame will be resized on next draw.
+                _ => {
+                    // Resize events are handled by the next draw.
                 }
-                _ => {}
             }
         }
 
@@ -120,7 +119,7 @@ fn handle_effect(
     options: &AnalyzeOptions,
 ) {
     match effect {
-        Effect::Quit => {
+        Effect::Quit | Effect::CancelAnalysis => {
             *worker_rx = None;
         }
         Effect::Analyze(path) => {
@@ -129,9 +128,6 @@ fn handle_effect(
                 path.clone(),
                 options.clone(),
             ));
-        }
-        Effect::CancelAnalysis => {
-            *worker_rx = None;
         }
         Effect::Export { path, bytes } => match write_unique(path, bytes) {
             Ok(actual) => app.set_toast(
@@ -196,14 +192,13 @@ fn write_unique(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<PathBuf
 fn copy_osc52(text: &str) -> std::io::Result<()> {
     let encoded = base64_encode(text.as_bytes());
     let mut stdout = io::stdout().lock();
-    use std::io::Write;
     write!(stdout, "\x1b]52;c;{encoded}\x07")?;
     stdout.flush()
 }
 
 fn base64_encode(input: &[u8]) -> String {
     const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut output = String::with_capacity((input.len() + 2) / 3 * 4);
+    let mut output = String::with_capacity(input.len().div_ceil(3) * 4);
     let mut i = 0;
     while i + 3 <= input.len() {
         let chunk = u32::from_be_bytes([input[i], input[i + 1], input[i + 2], 0]) >> 8;

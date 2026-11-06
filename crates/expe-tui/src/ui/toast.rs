@@ -11,7 +11,7 @@ pub fn draw(frame: &mut Frame<'_>, area: Rect, app: &App, theme: &Theme) {
     let Some(toast) = &app.toast else {
         return;
     };
-    let width = (area.width as usize).min(60).max(20) as u16;
+    let width = area.width.clamp(20, 60);
     let height = 3u16;
     let vertical = Layout::vertical([Constraint::Fill(1), Constraint::Length(height)]).split(area);
     let bottom = vertical[1];

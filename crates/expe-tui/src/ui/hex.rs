@@ -47,8 +47,11 @@ pub fn draw(frame: &mut Frame<'_>, area: Rect, app: &App, theme: &Theme) {
         if offset >= raw.len() as u64 {
             break;
         }
-        let end = (offset as usize + bytes_per_line).min(raw.len());
-        let slice = &raw[offset as usize..end];
+        let Ok(start) = usize::try_from(offset) else {
+            break;
+        };
+        let end = start.saturating_add(bytes_per_line).min(raw.len());
+        let slice = &raw[start..end];
         let hex = slice
             .iter()
             .map(|byte| format!("{byte:02X}"))
@@ -111,10 +114,7 @@ fn draw_info(frame: &mut Frame<'_>, area: Rect, app: &App, theme: &Theme) {
         Line::from(vec![
             Span::styled(format_offset(app.hex_offset), theme.accent_style()),
             Span::styled(
-                format!(
-                    "  of {} bytes  ·  ↑↓ scroll  ·  g goto  ·  Esc overview",
-                    size
-                ),
+                format!("  of {size} bytes  ·  ↑↓ scroll  ·  g goto  ·  Esc overview"),
                 theme.muted_style(),
             ),
         ])

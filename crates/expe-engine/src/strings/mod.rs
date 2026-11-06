@@ -122,13 +122,13 @@ fn scan_ascii(data: &[u8], min_len: usize, max_len: usize, out: &mut Deduper) {
         }
     }
 
-    if let Some(begin) = start {
-        if len >= min_len {
-            let end = begin.saturating_add(len);
-            if let Some(slice) = data.get(begin..end) {
-                let value = String::from_utf8_lossy(slice);
-                out.push(&value, begin as u64, StringEncoding::Ascii, truncated);
-            }
+    if let Some(begin) = start
+        && len >= min_len
+    {
+        let end = begin.saturating_add(len);
+        if let Some(slice) = data.get(begin..end) {
+            let value = String::from_utf8_lossy(slice);
+            out.push(&value, begin as u64, StringEncoding::Ascii, truncated);
         }
     }
 }

@@ -455,6 +455,8 @@ fn timestamp_anomaly(timestamp: u32) -> Option<Finding> {
     None
 }
 
+// The import-group table is intentionally scoped to this matcher.
+#[allow(clippy::items_after_statements)]
 fn import_findings(pe: &PeInfo, findings: &mut Vec<Finding>) {
     let imports: HashSet<String> = pe
         .imports
@@ -805,8 +807,8 @@ mod tests {
     #[test]
     fn entry_point_anomaly_is_detected() {
         let pe = PeInfo {
-            image_base: 0x400000,
-            entry_point: 0x500000,
+            image_base: 0x0040_0000,
+            entry_point: 0x0050_0000,
             sections: vec![section(".text", "R-X", 6.0)],
             is_signed: true,
             has_rich_header: true,
@@ -822,7 +824,7 @@ mod tests {
             segments: vec![expe_core::ElfSegment {
                 kind: "LOAD".to_string(),
                 permissions: "RWX".to_string(),
-                virtual_address: 0x400000,
+                virtual_address: 0x0040_0000,
                 file_offset: 0,
                 file_size: 10,
                 memory_size: 10,

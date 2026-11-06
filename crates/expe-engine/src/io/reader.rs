@@ -17,10 +17,20 @@ pub struct FileReader;
 
 impl ArtifactReader for FileReader {
     fn read(&self, path: &Path, limits: &Limits) -> Result<ArtifactBytes> {
-        let metadata = std::fs::metadata(path).map_err(|source| ExpeError::Io {
+        let metadata = std::fs::symlink_metadata(path).map_err(|source| ExpeError::Io {
             path: path.to_path_buf(),
             source,
         })?;
+
+        if metadata.file_type().is_symlink() {
+            return Err(ExpeError::Io {
+                path: path.to_path_buf(),
+                source: std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "symbolic links are refused; pass the target path explicitly",
+                ),
+            });
+        }
 
         if !metadata.is_file() {
             return Err(ExpeError::Io {
@@ -115,4 +125,29 @@ pub fn ensure_regular_file(path: &Path) -> Result<PathBuf> {
         });
     }
     Ok(path.to_path_buf())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = FileReader.read(dir.path(), &Limits::default()).unwrap_err();
+        assert!(error.to_string().contains("not a regular file"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rejects_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.bin");
+        std::fs::write(&target, b"MZ").unwrap();
+        let link = dir.path().join("link.bin");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let error = FileReader.read(&link, &Limits::default()).unwrap_err();
+        assert!(error.to_string().contains("symbolic links"));
+    }
 }

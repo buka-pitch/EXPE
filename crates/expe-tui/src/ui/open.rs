@@ -8,7 +8,7 @@ use super::{Theme, centered_rect, clip_ascii, sanitize};
 use crate::app::{App, Status};
 
 pub fn draw(frame: &mut Frame<'_>, area: Rect, app: &App, theme: &Theme) {
-    let card_width = area.width.min(72).max(50) as u16;
+    let card_width = area.width.clamp(50, 72);
     let card_height = if app.status.is_analyzing() { 14 } else { 11 };
     let card = centered_rect(area, card_width, card_height);
     let block = theme.panel("EXPE");

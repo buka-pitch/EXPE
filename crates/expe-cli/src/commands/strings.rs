@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use expe_core::{ArtifactReader, ExpeError, Limits, Result, StringEncoding, StringsSummary};
 use expe_engine::io::FileReader;
 use expe_engine::strings::scan;
@@ -7,9 +9,11 @@ use crate::cli::{EncodingArg, StringsArgs};
 use crate::commands::util;
 use crate::output::text;
 
-pub fn run(args: StringsArgs) -> Result<i32> {
-    let mut limits = Limits::default();
-    limits.min_string_len = args.min_len.max(1);
+pub fn run(args: &StringsArgs) -> Result<i32> {
+    let limits = Limits {
+        min_string_len: args.min_len.max(1),
+        ..Limits::default()
+    };
     let bytes = FileReader.read(&args.path, &limits)?;
     let mut result = scan(&bytes.bytes, &limits);
 
@@ -35,9 +39,10 @@ pub fn run(args: StringsArgs) -> Result<i32> {
 
     let mut out = text::render_strings(&result.items, args.defang);
     if shown < total {
-        out.push_str(&format!(
-            "\n[shown {shown} of {total} matching strings; raise --limit to see more]\n"
-        ));
+        let _ = writeln!(
+            out,
+            "\n[shown {shown} of {total} matching strings; raise --limit to see more]"
+        );
     }
     let summary = StringsSummary {
         total: result.items.len(),

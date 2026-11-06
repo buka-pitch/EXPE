@@ -85,7 +85,12 @@ pub fn score_findings(findings: &[Finding]) -> Risk {
         .collect();
 
     let raw: u32 = factors.iter().map(|f| f.capped_points).sum();
-    let score = (100.0 * (1.0 - (-f64::from(raw) / SATURATION).exp())).round() as u8;
+    let bounded = (100.0 * (1.0 - (-f64::from(raw) / SATURATION).exp()))
+        .round()
+        .clamp(0.0, 100.0);
+    // Clamped to the inclusive 0..=100 range above, so the cast cannot truncate or lose a sign.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let score = bounded as u8;
 
     Risk {
         score,

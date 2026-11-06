@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::fmt::Write as _;
+use std::path::{Path, PathBuf};
 
 use expe_core::{AnalysisOutcome, ExpeError, Result, Severity};
 use expe_engine::use_cases::batch::discover_files;
@@ -12,7 +13,7 @@ use crate::output::sanitize::sanitize;
 
 type Entry = (PathBuf, Result<AnalysisOutcome>);
 
-pub fn run(args: BatchArgs) -> Result<i32> {
+pub fn run(args: &BatchArgs) -> Result<i32> {
     if args.paths.is_empty() {
         return Err(ExpeError::Config(
             "batch needs at least one file or directory".to_string(),
@@ -109,8 +110,9 @@ fn render_text(entries: &[Entry], threshold: Option<Severity>) -> String {
             Ok(outcome) => {
                 ok += 1;
                 let report = &outcome.report;
-                out.push_str(&format!(
-                    "ok    {:<52} {:<6} {:<8} risk {:>3} {:<10} findings {:>2}  iocs {:>3}\n",
+                let _ = writeln!(
+                    out,
+                    "ok    {:<52} {:<6} {:<8} risk {:>3} {:<10} findings {:>2}  iocs {:>3}",
                     sanitize(&path.display().to_string()),
                     report.artifact.format.label(),
                     report.artifact.arch.label(),
@@ -118,25 +120,27 @@ fn render_text(entries: &[Entry], threshold: Option<Severity>) -> String {
                     report.risk.verdict.label(),
                     report.findings.len(),
                     report.ioc_count()
-                ));
+                );
             }
             Err(error) => {
                 errors += 1;
-                out.push_str(&format!(
-                    "error {:<52} {}\n",
+                let _ = writeln!(
+                    out,
+                    "error {:<52} {}",
                     sanitize(&path.display().to_string()),
                     sanitize(&error.to_string())
-                ));
+                );
             }
         }
     }
-    out.push_str(&format!(
-        "\n{} file(s): {} ok, {} error(s), threshold {}\n",
+    let _ = writeln!(
+        out,
+        "\n{} file(s): {} ok, {} error(s), threshold {}",
         entries.len(),
         ok,
         errors,
         threshold.map_or_else(|| "none".to_string(), |value| value.label().to_string())
-    ));
+    );
     out
 }
 
@@ -163,7 +167,7 @@ fn render_jsonl(entries: &[Entry]) -> Result<Vec<u8>> {
     Ok(out.into_bytes())
 }
 
-fn entry_value(path: &PathBuf, result: &Result<AnalysisOutcome>) -> serde_json::Value {
+fn entry_value(path: &Path, result: &Result<AnalysisOutcome>) -> serde_json::Value {
     match result {
         Ok(outcome) => json!({
             "path": path.to_string_lossy(),

@@ -245,7 +245,7 @@ fn multiline_value_lines(
         };
         lines.push(Line::from(vec![
             Span::styled(prefix, theme.muted_style()),
-            Span::raw(clip(&line, max)),
+            Span::raw(clip(line, max)),
         ]));
     }
     if lines.is_empty() {

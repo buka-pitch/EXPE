@@ -228,13 +228,13 @@ pub enum RulesCommand {
 pub fn run() -> Result<i32> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Analyze(args) => commands::analyze::run(args),
-        Command::Info(args) => commands::info::run(args),
-        Command::Strings(args) => commands::strings::run(args),
-        Command::Iocs(args) => commands::iocs::run(args),
-        Command::Batch(args) => commands::batch::run(args),
-        Command::Tui(args) => commands::tui::run(args),
-        Command::Rules(args) => commands::rules::run(args),
+        Command::Analyze(args) => commands::analyze::run(&args),
+        Command::Info(args) => commands::info::run(&args),
+        Command::Strings(args) => commands::strings::run(&args),
+        Command::Iocs(args) => commands::iocs::run(&args),
+        Command::Batch(args) => commands::batch::run(&args),
+        Command::Tui(args) => commands::tui::run(&args),
+        Command::Rules(args) => commands::rules::run(&args),
         Command::Schema => {
             let schema = schemars::schema_for!(AnalysisReport);
             let rendered = serde_json::to_string_pretty(&schema)
@@ -255,8 +255,10 @@ pub fn render(report: &AnalysisReport, format: FormatArg, defang: bool) -> Resul
 
 #[must_use]
 pub fn options_from_args(args: &AnalyzeArgs) -> AnalyzeOptions {
-    let mut options = AnalyzeOptions::default();
-    options.include_strings = args.include_strings;
+    let mut options = AnalyzeOptions {
+        include_strings: args.include_strings,
+        ..AnalyzeOptions::default()
+    };
     options.limits.min_string_len = args.min_string_len.max(1);
     if let Some(max) = args.max_strings {
         options.limits.max_strings = max;

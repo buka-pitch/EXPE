@@ -7,13 +7,15 @@ use crate::cli::{RulesArgs, RulesCommand};
 use crate::commands::util;
 use crate::output::sanitize::sanitize;
 
-pub fn run(args: RulesArgs) -> Result<i32> {
-    match args.command {
-        RulesCommand::List { file } => list(file),
-        RulesCommand::Check { file } => check(&file),
+pub fn run(args: &RulesArgs) -> Result<i32> {
+    match &args.command {
+        RulesCommand::List { file } => list(file.clone()),
+        RulesCommand::Check { file } => check(file),
     }
 }
 
+// The header literals are kept as arguments so the column widths stay aligned.
+#[allow(clippy::write_literal)]
 fn list(file: Option<std::path::PathBuf>) -> Result<i32> {
     let mut set = RuleSet::load_default()?;
     if let Some(path) = file {

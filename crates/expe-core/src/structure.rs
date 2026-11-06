@@ -59,6 +59,8 @@ pub struct Overlay {
     pub embedded: Vec<String>,
 }
 
+// These flags mirror independent PE header fields and are reported verbatim.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct PeInfo {
     pub machine: String,

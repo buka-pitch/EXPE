@@ -20,6 +20,8 @@ pub struct ToolInfo {
     pub ruleset_version: String,
 }
 
+// A flat report record is easier to serialize and compare than nested state.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct LimitsReport {
     pub bytes_scanned: u64,

@@ -3,7 +3,7 @@ use crate::commands::util;
 use crate::output::{json, markdown, text};
 use expe_core::Result;
 
-pub fn run(args: IocsArgs) -> Result<i32> {
+pub fn run(args: &IocsArgs) -> Result<i32> {
     let analyzer = args.rules.build_analyzer()?;
     let mut report = analyzer
         .analyze_path(&args.path, &expe_engine::AnalyzeOptions::default())?
