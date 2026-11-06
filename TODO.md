@@ -12,8 +12,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 - [x] CLI skeleton with clap (`analyze`, `info`, `strings`, `iocs`, `batch`, `tui`, `rules`, `schema`)
 - [x] TUI skeleton (ratatui 0.30 + crossterm) with panic-safe terminal restore
 - [x] rustfmt config + clippy lint policy (`unsafe_code` forbidden, pedantic)
-- [ ] CI workflow + `deny.toml` dependency/license checks
-- [ ] README, SECURITY, docs/architecture, docs/threat-model
+- [x] README with install, CLI/TUI reference, safety model, and development workflow
+- [x] CI workflow: rustfmt, clippy, test matrix, MSRV, release artifact
+- [ ] `deny.toml` dependency/license checks
+- [ ] SECURITY, docs/architecture, docs/threat-model
 
 ## M1 — Safe ingestion
 - [x] Read-only, regular-files-only reader with size cap
