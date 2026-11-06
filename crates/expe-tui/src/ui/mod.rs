@@ -51,16 +51,24 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
     .split(area);
 
     header::draw(frame, rows[0], app, &theme);
-    let body = Layout::horizontal([Constraint::Length(21), Constraint::Fill(1)]).split(rows[1]);
-    sidebar::draw(frame, body[0], app, &theme);
+    let content = if app.screen == Screen::Hex {
+        // Hex is a full-width inspection surface; the sidebar would only
+        // steal usable byte columns.
+        rows[1]
+    } else {
+        let columns =
+            Layout::horizontal([Constraint::Length(21), Constraint::Fill(1)]).split(rows[1]);
+        sidebar::draw(frame, columns[0], app, &theme);
+        columns[1]
+    };
     match app.screen {
-        Screen::Open => open::draw(frame, body[1], app, &theme),
-        Screen::Overview => overview::draw(frame, body[1], app, &theme),
-        Screen::Structure => structure::draw(frame, body[1], app, &theme),
-        Screen::Strings => strings::draw(frame, body[1], app, &theme),
-        Screen::Iocs => iocs::draw(frame, body[1], app, &theme),
-        Screen::Findings => findings::draw(frame, body[1], app, &theme),
-        Screen::Hex => hex::draw(frame, body[1], app, &theme),
+        Screen::Open => open::draw(frame, content, app, &theme),
+        Screen::Overview => overview::draw(frame, content, app, &theme),
+        Screen::Structure => structure::draw(frame, content, app, &theme),
+        Screen::Strings => strings::draw(frame, content, app, &theme),
+        Screen::Iocs => iocs::draw(frame, content, app, &theme),
+        Screen::Findings => findings::draw(frame, content, app, &theme),
+        Screen::Hex => hex::draw(frame, content, app, &theme),
     }
     footer::draw(frame, rows[2], app, &theme);
 
@@ -295,5 +303,22 @@ mod tests {
         terminal
             .draw(|frame| draw(frame, &mut app))
             .expect("toast should render");
+    }
+
+    #[test]
+    fn hex_uses_the_full_width_instead_of_the_sidebar_column() {
+        let backend = TestBackend::new(160, 40);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let mut app = App::new();
+        app.screen = Screen::Hex;
+        app.raw = Some(std::sync::Arc::from(vec![0_u8; 4096]));
+
+        terminal
+            .draw(|frame| draw(frame, &mut app))
+            .expect("hex should render");
+
+        // At 160 columns the full-width panel can fit 32 bytes per line. The
+        // old sidebar layout would leave only 137 inner columns and select 24.
+        assert_eq!(app.hex_line_bytes, 32);
     }
 }

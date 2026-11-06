@@ -177,6 +177,7 @@ pub struct App {
     pub should_quit: bool,
     pub ascii: bool,
     pub viewport_height: usize,
+    pub hex_line_bytes: usize,
 
     pub structure_selected: usize,
     pub structure_scroll: usize,
@@ -211,6 +212,7 @@ impl Default for App {
             should_quit: false,
             ascii: std::env::var_os("EXPE_ASCII").is_some(),
             viewport_height: 18,
+            hex_line_bytes: 16,
             structure_selected: 0,
             structure_scroll: 0,
             strings_selected: 0,
@@ -528,6 +530,16 @@ impl App {
             }
             KeyCode::Tab | KeyCode::Right => self.cycle_screen(1),
             KeyCode::BackTab | KeyCode::Left => self.cycle_screen(-1),
+            KeyCode::Up | KeyCode::Char('k') if self.screen == Screen::Hex => {
+                self.scroll_hex_lines(-1);
+            }
+            KeyCode::Down | KeyCode::Char('j') if self.screen == Screen::Hex => {
+                self.scroll_hex_lines(1);
+            }
+            KeyCode::PageUp if self.screen == Screen::Hex => self.scroll_hex_page(-1),
+            KeyCode::PageDown if self.screen == Screen::Hex => self.scroll_hex_page(1),
+            KeyCode::Home if self.screen == Screen::Hex => self.hex_home(),
+            KeyCode::End if self.screen == Screen::Hex => self.hex_end(),
             KeyCode::Up | KeyCode::Char('k') => self.move_selection(-1),
             KeyCode::Down | KeyCode::Char('j') => self.move_selection(1),
             KeyCode::PageUp => self.move_selection(-10),
@@ -716,6 +728,90 @@ impl App {
         self.ensure_current_visible(len);
     }
 
+    /// Called by the hex renderer once it knows the terminal geometry. The
+    /// byte width is kept in the model so keyboard scrolling follows the same
+    /// line size as the renderer.
+    pub fn prepare_hex_viewport(&mut self, bytes_per_line: usize, height: usize) {
+        self.hex_line_bytes = bytes_per_line.max(1);
+        self.viewport_height = height.max(1);
+
+        let max = self
+            .raw
+            .as_ref()
+            .map_or(0, |raw| u64::try_from(raw.len()).unwrap_or(u64::MAX));
+        if max == 0 {
+            self.hex_offset = 0;
+            return;
+        }
+
+        let line = self.hex_line_width();
+        let last_line = (max - 1) / line;
+        let current_line = (self.hex_offset / line).min(last_line);
+        self.hex_offset = current_line.saturating_mul(line);
+        if let Some(mark) = self.hex_mark {
+            self.hex_mark = Some(mark.min(max - 1));
+        }
+    }
+
+    pub fn scroll_hex_lines(&mut self, lines: i64) {
+        let max = self
+            .raw
+            .as_ref()
+            .map_or(0, |raw| u64::try_from(raw.len()).unwrap_or(u64::MAX));
+        if max == 0 {
+            self.hex_offset = 0;
+            return;
+        }
+
+        let line = self.hex_line_width();
+        let last_line = (max - 1) / line;
+        let current_line = (self.hex_offset / line).min(last_line);
+        let next_line = if lines.is_negative() {
+            current_line.saturating_sub(lines.unsigned_abs())
+        } else {
+            current_line.saturating_add(u64::try_from(lines).unwrap_or(u64::MAX))
+        }
+        .min(last_line);
+
+        self.hex_offset = next_line.saturating_mul(line);
+        self.hex_mark = None;
+    }
+
+    pub fn scroll_hex_page(&mut self, direction: i64) {
+        let page = i64::try_from(self.viewport_height.max(1)).unwrap_or(i64::MAX);
+        self.scroll_hex_lines(direction.saturating_mul(page));
+    }
+
+    pub fn hex_home(&mut self) {
+        self.hex_offset = 0;
+        self.hex_mark = None;
+    }
+
+    pub fn hex_end(&mut self) {
+        let max = self
+            .raw
+            .as_ref()
+            .map_or(0, |raw| u64::try_from(raw.len()).unwrap_or(u64::MAX));
+        if max == 0 {
+            self.hex_offset = 0;
+            self.hex_mark = None;
+            return;
+        }
+
+        let line = self.hex_line_width();
+        let last_line = (max - 1) / line;
+        let visible_lines = u64::try_from(self.viewport_height.max(1)).unwrap_or(u64::MAX);
+        let first_line = last_line.saturating_sub(visible_lines.saturating_sub(1));
+        self.hex_offset = first_line.saturating_mul(line);
+        self.hex_mark = None;
+    }
+
+    fn hex_line_width(&self) -> u64 {
+        u64::try_from(self.hex_line_bytes)
+            .unwrap_or(u64::MAX)
+            .max(1)
+    }
+
     pub fn sections(&self) -> &[Section] {
         match self.report.as_ref().map(|report| &report.structure) {
             Some(Structure::Pe(info)) => &info.sections,
@@ -870,6 +966,17 @@ impl App {
     }
 
     fn jump_to_hex(&mut self) {
+        if self.screen == Screen::Hex {
+            let max = self
+                .raw
+                .as_ref()
+                .map_or(0, |raw| u64::try_from(raw.len()).unwrap_or(u64::MAX));
+            if max > 0 {
+                self.hex_offset = self.hex_offset.min(max - 1);
+                self.hex_mark = Some(self.hex_offset);
+            }
+            return;
+        }
         let offset = match self.screen {
             Screen::Strings => self.selected_string().map(|item| item.offset),
             Screen::Iocs => self
@@ -935,19 +1042,6 @@ impl App {
     pub fn scroll(&self) -> usize {
         self.current_scroll()
     }
-
-    pub fn scroll_hex(&mut self, bytes: i64) {
-        let max = self.raw.as_ref().map_or(0, |raw| raw.len() as u64);
-        let next = if bytes.is_negative() {
-            self.hex_offset.saturating_sub(bytes.unsigned_abs())
-        } else {
-            self.hex_offset
-                .saturating_add(bytes.unsigned_abs())
-                .min(max.saturating_sub(1))
-        };
-        self.hex_offset = next;
-        self.hex_mark = None;
-    }
 }
 
 #[cfg(test)]
@@ -1000,6 +1094,52 @@ mod tests {
         app.move_selection(-1);
         app.move_selection(1);
         assert_eq!(app.strings_selected, 0);
+    }
+
+    fn hex_app() -> App {
+        let mut app = App::new();
+        app.screen = Screen::Hex;
+        app.input = InputMode::Normal;
+        app.raw = Some(std::sync::Arc::from(vec![0_u8; 512]));
+        app.hex_line_bytes = 16;
+        app.viewport_height = 8;
+        app
+    }
+
+    #[test]
+    fn hex_arrows_and_page_keys_scroll_by_line() {
+        let mut app = hex_app();
+
+        app.update(Msg::Key(key(KeyCode::Down)));
+        assert_eq!(app.hex_offset, 16);
+        app.update(Msg::Key(key(KeyCode::Char('j'))));
+        assert_eq!(app.hex_offset, 32);
+
+        app.update(Msg::Key(key(KeyCode::PageDown)));
+        assert_eq!(app.hex_offset, 160);
+        app.update(Msg::Key(key(KeyCode::PageUp)));
+        assert_eq!(app.hex_offset, 32);
+
+        app.update(Msg::Key(key(KeyCode::Up)));
+        assert_eq!(app.hex_offset, 16);
+        app.update(Msg::Key(key(KeyCode::Char('k'))));
+        assert_eq!(app.hex_offset, 0);
+    }
+
+    #[test]
+    fn hex_home_end_and_enter_mark_the_current_line() {
+        let mut app = hex_app();
+
+        app.update(Msg::Key(key(KeyCode::End)));
+        assert_eq!(app.hex_offset, 384);
+
+        app.update(Msg::Key(key(KeyCode::Enter)));
+        assert_eq!(app.hex_mark, Some(384));
+        assert!(app.toast.is_none());
+
+        app.update(Msg::Key(key(KeyCode::Home)));
+        assert_eq!(app.hex_offset, 0);
+        assert_eq!(app.hex_mark, None);
     }
 
     fn sample_report() -> AnalysisReport {

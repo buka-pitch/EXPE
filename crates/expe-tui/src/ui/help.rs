@@ -32,11 +32,11 @@ pub fn draw(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         ]),
         Line::from(vec![
             Span::styled("  ↑ ↓  j k", theme.accent_style()),
-            Span::styled("  move selection", theme.muted_style()),
+            Span::styled("  move selection / scroll hex", theme.muted_style()),
         ]),
         Line::from(vec![
             Span::styled("  PgUp PgDn", theme.accent_style()),
-            Span::styled("  jump by 10", theme.muted_style()),
+            Span::styled("  jump / scroll one page", theme.muted_style()),
         ]),
         Line::from(vec![
             Span::styled("  Home End", theme.accent_style()),

@@ -59,6 +59,6 @@ fn hints_for(app: &App) -> String {
         Screen::Strings => "↑↓/jk move · / filter · Enter/x hex · c copy".to_string(),
         Screen::Iocs => "↑↓/jk move · / filter · Enter/x hex · c copy · d defang".to_string(),
         Screen::Findings => "↑↓/jk move · / filter · c copy · e export".to_string(),
-        Screen::Hex => "↑↓ scroll · PgUp/PgDn · g goto offset · Esc overview".to_string(),
+        Screen::Hex => "↑↓/jk line · PgUp/PgDn page · Home/End · g goto · Esc overview".to_string(),
     }
 }

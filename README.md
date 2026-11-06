@@ -159,9 +159,9 @@ before it reaches the driver.
 | Key | Action |
 |---|---|
 | `1`–`6`, `Tab`, `Shift+Tab` | Switch views |
-| `↑`, `↓`, `j`, `k` | Move selection |
-| `PgUp`, `PgDn` | Jump 10 rows |
-| `Home`, `End` | First / last row |
+| `↑`, `↓`, `j`, `k` | Move selection; scroll the Hex view by one line |
+| `PgUp`, `PgDn` | Jump 10 rows; scroll the Hex view by one page |
+| `Home`, `End` | First / last row; top / bottom of the Hex view |
 | `/` | Live filter (Structure, Strings, IOCs, Findings) |
 | `Enter`, `x` | Jump to hex at the selected offset |
 | `c` | Copy the selected value/evidence with OSC52 |
@@ -181,7 +181,7 @@ before it reaches the driver.
 3. **Strings** — virtualized list with live regex filtering.
 4. **IOCs** — grouped indicators with confidence, sources, and offsets.
 5. **Findings** — severity-sorted findings with evidence and ATT&CK mapping.
-6. **Hex** — 16/8/4 bytes per line, scrolling, goto offset, and mark highlighting.
+6. **Hex** — full-width view with adaptive 8–64 bytes per line, line/page scrolling, goto offset, and mark highlighting.
 
 ## Output
 
